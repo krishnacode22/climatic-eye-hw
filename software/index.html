@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Climatic Eye - Admin Debug</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #111827;
+      --panel2: #0f172a;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --border: #263244;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --info: #60a5fa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .wrap { max-width: 1250px; margin: 0 auto; padding: 24px; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    h1 { margin: 0 0 6px; font-size: 28px; }
+    .subtitle { color: var(--muted); }
+    .status {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 12px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      min-width: 0;
+    }
+    .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .value { font-size: 26px; font-weight: 700; margin-top: 7px; }
+    .unit { color: var(--muted); font-size: 13px; }
+    .interp { margin-top: 8px; font-size: 13px; }
+    .section { margin-top: 20px; }
+    .section h2 { margin: 0 0 10px; font-size: 18px; }
+    .rows { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .row {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .row span:first-child { color: var(--muted); }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+    }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .bad { color: var(--bad); }
+    .info { color: var(--info); }
+    pre {
+      margin: 0;
+      background: #060b14;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: auto;
+      min-height: 220px;
+      color: #d1d5db;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .error {
+      margin-top: 10px;
+      color: var(--bad);
+      font-size: 13px;
+    }
+    .footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    @media (max-width: 950px) { .grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 600px) {
+      .wrap { padding: 14px; }
+      header { flex-direction: column; }
+      .grid, .rows { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Climatic Eye · Admin Debug</h1>
+      <div class="subtitle">Live local sensor telemetry and raw ESP32 diagnostic output</div>
+    </div>
+    <div id="connection" class="status">Connecting…</div>
+  </header>
+
+  <section class="grid">
+    <div class="card">
+      <div class="label">Temperature</div>
+      <div id="temperature" class="value">--</div>
+      <div class="unit">°C</div>
+      <div id="temperatureInterp" class="interp">Waiting…</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Humidity</div>
+      <div id="humidity" class="value">--</div>
+      <div class="unit">%</div>
+      <div id="humidityInterp" class="interp">Waiting…</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Pressure</div>
+      <div id="pressure" class="value">--</div>
+      <div class="unit">hPa</div>
+      <div id="pressureInterp" class="interp">Waiting…</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Light</div>
+      <div id="light" class="value">--</div>
+      <div class="unit">lux</div>
+      <div id="lightInterp" class="interp">Waiting…</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Rain</div>
+      <div id="rain" class="value">--</div>
+      <div class="unit">%</div>
+      <div id="rainInterp" class="interp">Waiting…</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Soil Moisture</div>
+      <div id="soil" class="value">--</div>
+      <div class="unit">%</div>
+      <div id="soilInterp" class="interp">Waiting…</div>
+    </div>
+
+    <div class="card">
+      <div class="label">GPS</div>
+      <div id="gps" class="value">--</div>
+      <div class="unit">fix status</div>
+      <div id="gpsInterp" class="interp">Waiting…</div>
+    </div>
+
+    <div class="card">
+      <div class="label">LoRa</div>
+      <div id="lora" class="value">--</div>
+      <div class="unit">last transmit</div>
+      <div id="loraInterp" class="interp">Waiting…</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>System / Sensor Status</h2>
+    <div class="rows">
+      <div class="row"><span>Node ID</span><strong id="nodeId">--</strong></div>
+      <div class="row"><span>Packet</span><strong id="packet">--</strong></div>
+      <div class="row"><span>BMP280</span><strong id="bmpStatus">--</strong></div>
+      <div class="row"><span>BH1750</span><strong id="bhStatus">--</strong></div>
+      <div class="row"><span>DHT11</span><strong id="dhtStatus">--</strong></div>
+      <div class="row"><span>GPS</span><strong id="gpsStatus">--</strong></div>
+      <div class="row"><span>LoRa</span><strong id="loraStatus">--</strong></div>
+      <div class="row"><span>Last update</span><strong id="updated">--</strong></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Raw Sensor Readings</h2>
+    <div class="rows">
+      <div class="row"><span>Raindrop ADC</span><strong id="rainRaw">--</strong></div>
+      <div class="row"><span>Soil ADC</span><strong id="soilRaw">--</strong></div>
+      <div class="row"><span>BMP Temperature</span><strong id="bmpTempRaw">--</strong></div>
+      <div class="row"><span>GPS Satellites</span><strong id="satellites">--</strong></div>
+      <div class="row"><span>Latitude</span><strong id="latitude">--</strong></div>
+      <div class="row"><span>Longitude</span><strong id="longitude">--</strong></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Raw ESP32 Diagnostic Output</h2>
+    <pre id="rawLog">Waiting for ESP32 data…</pre>
+    <div id="error" class="error"></div>
+  </section>
+
+  <div class="footer">
+    Debug page polls <code>/api/data</code>. Values shown as “N/A” are deliberate fallbacks for unavailable sensors or GPS fixes.
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  function valueOrNA(v, suffix = "") {
+    return (v === null || v === undefined || Number.isNaN(v)) ? "N/A" : `${v}${suffix}`;
+  }
+
+  function badge(text, cls) {
+    return `<span class="badge ${cls}">${text}</span>`;
+  }
+
+  function interpretTemperature(v) {
+    if (v == null) return "Temperature unavailable";
+    if (v < 15) return "Cool";
+    if (v < 25) return "Comfortable";
+    if (v < 32) return "Warm";
+    return "Hot";
+  }
+
+  function interpretHumidity(v) {
+    if (v == null) return "Humidity unavailable";
+    if (v < 30) return "Dry air";
+    if (v < 60) return "Moderate";
+    if (v < 80) return "Humid";
+    return "Very humid";
+  }
+
+  function interpretPressure(v) {
+    if (v == null) return "Pressure unavailable";
+    if (v < 1000) return "Low pressure";
+    if (v <= 1025) return "Normal range";
+    return "High pressure";
+  }
+
+  function interpretLight(v) {
+    if (v == null) return "Light unavailable";
+    if (v < 10) return "Dark";
+    if (v < 100) return "Very dim";
+    if (v < 1000) return "Indoor / overcast";
+    if (v < 10000) return "Bright daylight";
+    return "Very bright / direct sun";
+  }
+
+  function interpretRain(v, raw) {
+    if (v == null) return "Rain sensor unavailable";
+    if (v < 10) return "Dry";
+    if (v < 35) return "Slight moisture";
+    if (v < 70) return "Wet";
+    return "Rain detected";
+  }
+
+  function interpretSoil(v) {
+    if (v == null) return "Soil sensor unavailable";
+    if (v < 20) return "Very dry";
+    if (v < 40) return "Dry";
+    if (v < 70) return "Good moisture";
+    return "Very wet";
+  }
+
+  function setValue(id, value) {
+    $(id).textContent = value;
+  }
+
+  function render(data) {
+    setValue("temperature", valueOrNA(data.temperature));
+    setValue("humidity", valueOrNA(data.humidity));
+    setValue("pressure", valueOrNA(data.pressure));
+    setValue("light", valueOrNA(data.light_lux));
+    setValue("rain", valueOrNA(data.rain_percent));
+    setValue("soil", valueOrNA(data.soil_percent));
+
+    $("temperatureInterp").textContent = interpretTemperature(data.temperature);
+    $("humidityInterp").textContent = interpretHumidity(data.humidity);
+    $("pressureInterp").textContent = interpretPressure(data.pressure);
+    $("lightInterp").textContent = interpretLight(data.light_lux);
+    $("rainInterp").textContent = interpretRain(data.rain_percent, data.rain_raw);
+    $("soilInterp").textContent = interpretSoil(data.soil_percent);
+
+    if (data.gps_fix) {
+      setValue("gps", "FIX");
+      $("gpsInterp").innerHTML = badge(`${data.satellites || 0} satellites`, "ok");
+    } else {
+      setValue("gps", "NO FIX");
+      $("gpsInterp").innerHTML = badge("Waiting for GPS", "warn");
+    }
+
+    setValue("lora", data.lora_sent ? "SENT" : "FAILED");
+    $("loraInterp").innerHTML = data.lora_sent
+      ? badge("Packet transmitted", "ok")
+      : badge("Transmission failed", "bad");
+
+    setValue("nodeId", data.node_id ?? "N/A");
+    setValue("packet", data.packet ?? "N/A");
+    setValue("bmpStatus", data.bmp_ok ? "OK" : "FAILED");
+    setValue("bhStatus", data.bh1750_ok ? "OK" : "FAILED");
+    setValue("dhtStatus", data.dht_ok ? "OK" : "FAILED");
+    setValue("gpsStatus", data.gps_fix ? "FIX" : "NO FIX");
+    setValue("loraStatus", data.lora_ok ? (data.lora_sent ? "OK / SENT" : "OK / FAILED TX") : "FAILED");
+    setValue("updated", new Date().toLocaleTimeString());
+
+    setValue("rainRaw", valueOrNA(data.rain_raw));
+    setValue("soilRaw", valueOrNA(data.soil_raw));
+    setValue("bmpTempRaw", valueOrNA(data.bmp_temperature, " °C"));
+    setValue("satellites", valueOrNA(data.satellites));
+    setValue("latitude", data.gps_fix ? valueOrNA(data.latitude) : "N/A");
+    setValue("longitude", data.gps_fix ? valueOrNA(data.longitude) : "N/A");
+
+    $("rawLog").textContent = data.raw_log || data.raw_json || "No raw output available.";
+    $("error").textContent = data.error || "";
+
+    $("connection").textContent = "ESP32 connected";
+    $("connection").style.color = "var(--ok)";
+  }
+
+  async function fetchData() {
+    try {
+      const response = await fetch("/api/data", { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      render(data);
+    } catch (err) {
+      $("connection").textContent = "Disconnected";
+      $("connection").style.color = "var(--bad)";
+      $("error").textContent = `Dashboard connection error: ${err.message}`;
+    }
+  }
+
+  fetchData();
+  setInterval(fetchData, 2000);
+</script>
+</body>
+</html>
